@@ -1,9 +1,92 @@
 <script>
-	import { Heading, P, Button, ButtonGroup, Input, Span } from 'flowbite-svelte';
+	import { Heading, Button, ButtonGroup, Input, Span, Avatar, Card } from 'flowbite-svelte';
+	import { ArrowUpRightFromSquareOutline } from 'flowbite-svelte-icons';
 	import { OPENAI_API_KEY } from './keys.js';
 	import { prompt_body } from './comfyUI.js';
 
 	let searchTerm = '';
+	let suggestions = [
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Sofa',
+			description: 'A sofa is a piece of furniture that a few people can sit on together.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Sectional Sofa',
+			description: 'A sectional sofa is a sofa that is made up of several separate pieces.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Sleeper Sofa',
+			description: 'A sleeper sofa is a sofa that can be made into a bed.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Reclining Sofa',
+			description: 'A reclining sofa is a sofa that has a back that can be tilted back.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Loveseat',
+			description: 'A loveseat is a sofa that is made for two people.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Chesterfield Sofa',
+			description: 'A chesterfield sofa is a sofa with a back and arms that are the same height.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Settee',
+			description: 'A settee is a sofa that is made for two people.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Chaise Lounge',
+			description: 'A chaise lounge is a sofa that is made for one person.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Futon',
+			description: 'A futon is a sofa that can be made into a bed.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Daybed',
+			description: 'A daybed is a sofa that can be made into a bed.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Sofa Bed',
+			description: 'A sofa bed is a sofa that can be made into a bed.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Sofa Table',
+			description: 'A sofa table is a table that is placed behind a sofa.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Sofa Slipcover',
+			description: 'A sofa slipcover is a cover that is placed over a sofa.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Sofa Cover',
+			description: 'A sofa cover is a cover that is placed over a sofa.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Sofa Set',
+			description: 'A sofa set is a set of sofas.'
+		},
+		{
+			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
+			term: 'Sofa Chair',
+			description: 'A sofa chair is a chair that is made for one person.'
+		}
+	];
 
 	async function search() {
 		console.log('searching');
@@ -64,13 +147,13 @@
 	}
 </script>
 
-<div class="text-center">
-	<Heading tag="h1">Wayfair <Span gradient>Deep</Span>Search</Heading>
-	<Heading tag="h5">Help users go deeper into their search intent</Heading>
+<div class="p-3 text-center">
+	<Heading tag="h1" class="p-2">Wayfair <Span gradient>Deep</Span>Search</Heading>
+	<Heading tag="h5">Unleash the Power of User Intent Deep Dive</Heading>
 </div>
 
-<div class="pt-8">
-	<ButtonGroup class="w-full">
+<div>
+	<ButtonGroup class="w-full p-3">
 		<Input
 			bind:value={searchTerm}
 			id="searchTerm"
@@ -78,4 +161,26 @@
 		/>
 		<Button on:click={search} color="primary">Search</Button>
 	</ButtonGroup>
+</div>
+
+<div class="flex flex-wrap p-3">
+	{#each suggestions as suggestion (suggestion.term)}
+		<Card class="m-3 w-96">
+			<div class="flex items-center space-x-4 p-1">
+				<Avatar size="xl" src={suggestion.image} />
+				<div class="space-y-1 font-medium">
+					<div>{suggestion.term}</div>
+					<div class="text-sm text-gray-400">
+						{suggestion.description}
+					</div>
+					<div>
+						<a href="/" class="inline-flex items-center text-primary-600 hover:underline">
+							See Products
+							<ArrowUpRightFromSquareOutline class="ms-2.5 h-3 w-3" />
+						</a>
+					</div>
+				</div>
+			</div>
+		</Card>
+	{/each}
 </div>
