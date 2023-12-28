@@ -1,18 +1,5 @@
-# create-svelte
-
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/main/packages/create-svelte).
-
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
-
-```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+# Wayfair DeepSearch
+A Demo to show some ideas in terms of helping users to drill down to deeper intent search terms
 
 ## Developing
 
@@ -36,3 +23,12 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://kit.svelte.dev/docs/adapters) for your target environment.
+
+## Image generation
+
+This Svelte app will need to call the ComfyUI backend to generate images. In my case, it is hosted locally. Do not forget to enable CORS for ComfyUI. 
+
+Running the ComfyUI with MacOS M1: 
+```
+python main.py --enable-cors-header --force-fp16
+```

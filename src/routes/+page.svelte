@@ -1,19 +1,37 @@
 <script>
 	import { Heading, P, Button, ButtonGroup, Input, Span } from 'flowbite-svelte';
 	import { OPENAI_API_KEY } from './keys.js';
+	import { prompt_body } from './comfyUI.js';
 
 	let searchTerm = '';
 
 	async function search() {
 		console.log('searching');
-		const jsonStr = await callOpenAI(searchTerm);
-		const suggestionsObj = JSON.parse(jsonStr);
-		const suggestions = suggestionsObj.suggestions;
-		console.log(`total suggestions: ${suggestions.length}`);
-		suggestions.forEach((suggestion) => {
-			console.log(`term: ${suggestion.term}`);
-			console.log(`description: ${suggestion.description}`);
-		});
+		// const jsonStr = await callOpenAI(searchTerm);
+		// const suggestionsObj = JSON.parse(jsonStr);
+		// const suggestions = suggestionsObj.suggestions;
+		// console.log(`total suggestions: ${suggestions.length}`);
+		// suggestions.forEach((suggestion) => {
+		// 	console.log(`term: ${suggestion.term}`);
+		// 	console.log(`description: ${suggestion.description}`);
+		// 	generateImage(`${suggestion.term}: ${suggestion.description}`);
+		// });
+		const term = 'Industrial Coffee Tables: Often combine wood and metal, rugged look.';
+		generateImage(term);
+	}
+
+	async function generateImage(prompt) {
+		const url = 'http://127.0.0.1:8188/prompt';
+		const headers = {
+			'Content-Type': 'application/json'
+		};
+		const body = prompt_body(prompt);
+
+		const response = await fetch(url, { method: 'POST', headers, body });
+		const data = await response.json();
+		const promptId = data.prompt_id;
+		console.log(`prompt_id: ${promptId}`);
+		return promptId;
 	}
 
 	async function callOpenAI(term) {
