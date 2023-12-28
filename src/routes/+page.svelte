@@ -1,95 +1,60 @@
 <script>
-	import { Heading, Button, ButtonGroup, Input, Span, Avatar, Card } from 'flowbite-svelte';
+	import { Heading, Button, ButtonGroup, Input, Span, Avatar, Card, Alert } from 'flowbite-svelte';
 	import { ArrowUpRightFromSquareOutline } from 'flowbite-svelte-icons';
 	import { OPENAI_API_KEY } from './keys.js';
 	import { prompt_body } from './comfyUI.js';
 
+	// node 26 is the image save node in the comfyUI workflow
+	const OUTPUT_NODE = 26;
+
 	let searchTerm = '';
-	let suggestions = [
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Sofa',
-			description: 'A sofa is a piece of furniture that a few people can sit on together.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Sectional Sofa',
-			description: 'A sectional sofa is a sofa that is made up of several separate pieces.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Sleeper Sofa',
-			description: 'A sleeper sofa is a sofa that can be made into a bed.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Reclining Sofa',
-			description: 'A reclining sofa is a sofa that has a back that can be tilted back.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Loveseat',
-			description: 'A loveseat is a sofa that is made for two people.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Chesterfield Sofa',
-			description: 'A chesterfield sofa is a sofa with a back and arms that are the same height.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Settee',
-			description: 'A settee is a sofa that is made for two people.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Chaise Lounge',
-			description: 'A chaise lounge is a sofa that is made for one person.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Futon',
-			description: 'A futon is a sofa that can be made into a bed.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Daybed',
-			description: 'A daybed is a sofa that can be made into a bed.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Sofa Bed',
-			description: 'A sofa bed is a sofa that can be made into a bed.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Sofa Table',
-			description: 'A sofa table is a table that is placed behind a sofa.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Sofa Slipcover',
-			description: 'A sofa slipcover is a cover that is placed over a sofa.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Sofa Cover',
-			description: 'A sofa cover is a cover that is placed over a sofa.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Sofa Set',
-			description: 'A sofa set is a set of sofas.'
-		},
-		{
-			image: 'http://127.0.0.1:8188/view?filename=wayfair_00005_.png&type=output',
-			term: 'Sofa Chair',
-			description: 'A sofa chair is a chair that is made for one person.'
-		}
-	];
+
+	// states
+	let isGettingSuggestions = false;
+	let isGeneratingImages = false;
+
+	let suggestions = [];
+
+	// simulate api call latency
+	async function stall(stallTime = 5000) {
+		await new Promise((resolve) => setTimeout(resolve, stallTime));
+	}
+
+	function setSuggestionsMock() {
+		suggestions = [
+			// {
+			// 	term: 'Daybed',
+			// 	description: 'A daybed is a sofa that can be made into a bed.'
+			// },
+			// {
+			// 	term: 'Sofa Bed',
+			// 	description: 'A sofa bed is a sofa that can be made into a bed.'
+			// },
+			{
+				term: 'Sofa Table',
+				description: 'A sofa table is a table that is placed behind a sofa.'
+			},
+			{
+				term: 'Sofa Slipcover',
+				description: 'A sofa slipcover is a cover that is placed over a sofa.'
+			},
+			{
+				term: 'Sofa Cover',
+				description: 'A sofa cover is a cover that is placed over a sofa.'
+			},
+			{
+				term: 'Sofa Set',
+				description: 'A sofa set is a set of sofas.'
+			},
+			{
+				term: 'Sofa Chair',
+				description: 'A sofa chair is a chair that is made for one person.'
+			}
+		];
+	}
 
 	async function search() {
-		console.log('searching');
+		isGettingSuggestions = true;
 		// const jsonStr = await callOpenAI(searchTerm);
 		// const suggestionsObj = JSON.parse(jsonStr);
 		// const suggestions = suggestionsObj.suggestions;
@@ -99,11 +64,59 @@
 		// 	console.log(`description: ${suggestion.description}`);
 		// 	generateImage(`${suggestion.term}: ${suggestion.description}`);
 		// });
-		const term = 'Industrial Coffee Tables: Often combine wood and metal, rugged look.';
-		generateImage(term);
+		await stall();
+		setSuggestionsMock();
+		isGettingSuggestions = false;
+
+		isGeneratingImages = true;
+		await generateImages();
+
+		while (true) {
+			await hydrateAllImageUrls();
+
+			let allImagesUpdated = suggestions.every((suggestion) => !!suggestion.image);
+			if (allImagesUpdated) {
+				break;
+			}
+			console.log('waiting for all images to be updated...');
+			await new Promise((resolve) => setTimeout(resolve, 1000));
+		}
+		isGeneratingImages = false;
 	}
 
-	async function generateImage(prompt) {
+	async function generateImages() {
+		// trigger image generation
+		for (let i = 0; i < suggestions.length; i++) {
+			let prompt = `${suggestions[i].term}: ${suggestions[i].description}`;
+			let promptId = await triggerGenerateImage(prompt);
+			suggestions[i].promptId = promptId;
+			console.log(`generated image for prompt: ${prompt} with promptId: ${promptId}`);
+		}
+	}
+
+	async function hydrateAllImageUrls() {
+		for (let i = 0; i < suggestions.length; i++) {
+			if (suggestions[i].image) {
+				continue;
+			}
+			let promptId = suggestions[i].promptId;
+			const url = `http://127.0.0.1:8188/history/${promptId}`;
+			const headers = {
+				'Content-Type': 'application/json'
+			};
+			const response = await fetch(url, { method: 'GET', headers });
+			const data = await response.json();
+
+			if (data && data[promptId]) {
+				let filename = data[promptId].outputs[OUTPUT_NODE].images[0].filename;
+				console.log(`filename: ${filename}`);
+				suggestions[i].image = `http://127.0.0.1:8188/view?filename=${filename}&type=output`;
+			}
+		}
+	}
+
+	// given a prompt, generate an image, returns the prompt id
+	async function triggerGenerateImage(prompt) {
 		const url = 'http://127.0.0.1:8188/prompt';
 		const headers = {
 			'Content-Type': 'application/json'
@@ -113,7 +126,6 @@
 		const response = await fetch(url, { method: 'POST', headers, body });
 		const data = await response.json();
 		const promptId = data.prompt_id;
-		console.log(`prompt_id: ${promptId}`);
 		return promptId;
 	}
 
@@ -163,24 +175,38 @@
 	</ButtonGroup>
 </div>
 
-<div class="flex flex-wrap p-3">
-	{#each suggestions as suggestion (suggestion.term)}
-		<Card class="m-3 w-96">
-			<div class="flex items-center space-x-4 p-1">
-				<Avatar size="xl" src={suggestion.image} />
-				<div class="space-y-1 font-medium">
-					<div>{suggestion.term}</div>
-					<div class="text-sm text-gray-400">
-						{suggestion.description}
-					</div>
-					<div>
-						<a href="/" class="inline-flex items-center text-primary-600 hover:underline">
-							See Products
-							<ArrowUpRightFromSquareOutline class="ms-2.5 h-3 w-3" />
-						</a>
+{#if isGettingSuggestions}
+	<div class="p-3">
+		<Alert color="primary">Getting suggestions...</Alert>
+	</div>
+{/if}
+
+{#if isGeneratingImages}
+	<div class="p-3">
+		<Alert color="primary">Generating images...</Alert>
+	</div>
+{/if}
+
+{#if !isGettingSuggestions && !isGeneratingImages && suggestions.length > 0}
+	<div class="flex flex-wrap p-3">
+		{#each suggestions as suggestion (suggestion.term)}
+			<Card class="m-3 w-96">
+				<div class="flex items-center space-x-4 p-1">
+					<Avatar size="xl" src={suggestion.image} />
+					<div class="space-y-1 font-medium">
+						<div>{suggestion.term}</div>
+						<div class="text-sm text-gray-400">
+							{suggestion.description}
+						</div>
+						<div>
+							<a href="/" class="inline-flex items-center text-primary-600 hover:underline">
+								See Products
+								<ArrowUpRightFromSquareOutline class="ms-2.5 h-3 w-3" />
+							</a>
+						</div>
 					</div>
 				</div>
-			</div>
-		</Card>
-	{/each}
-</div>
+			</Card>
+		{/each}
+	</div>
+{/if}
