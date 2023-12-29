@@ -15,7 +15,7 @@
 	} from 'flowbite-svelte';
 	import { ArrowUpRightFromSquareOutline } from 'flowbite-svelte-icons';
 	import { sineOut } from 'svelte/easing';
-	import { OPENAI_API_KEY } from './keys.js';
+	import { OPENAI_API_KEY, GEMINI_API_KEY } from './keys.js';
 	import { prompt_body } from './comfyUI.js';
 
 	// node 26 is the image save node in the comfyUI workflow
@@ -60,7 +60,7 @@
 
 		// generate suggestions
 		isGettingSuggestions = true;
-		const jsonStr = await callOpenAI(searchTerm);
+		const jsonStr = await callGemini(searchTerm);
 		const suggestionsObj = JSON.parse(jsonStr);
 		suggestions = suggestionsObj.suggestions;
 
@@ -151,12 +151,34 @@
 		return promptId;
 	}
 
+	async function callGemini(term) {
+		const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+		const headers = {
+			'Content-Type': 'application/json'
+		};
+		const body = JSON.stringify({
+			contents: [
+				{
+					parts: [
+						{
+							text: `You are an assistant supporting users on an e-commerce home goods and furniture website to refine their search queries. A user has searched for "${term}". Please provide a list of popular types of "${term}" in a JSON structure to assist the user in narrowing down their search. Your answer for "Rug" should be formatted like this: {"suggestions":[{"term":"Area Rugs","description":"For larger spaces, often decorative."},{"term":"Runner Rugs","description":"Long, narrow rugs, great for hallways."}]}`
+						}
+					]
+				}
+			]
+		});
+
+		const response = await fetch(url, { method: 'POST', headers, body });
+		const data = await response.json();
+		const content = data.candidates[0].content.parts[0].text;
+		return content;
+	}
+
 	async function callOpenAI(term) {
-		const apiKey = OPENAI_API_KEY;
 		const url = 'https://api.openai.com/v1/chat/completions';
 		const headers = {
 			'Content-Type': 'application/json',
-			Authorization: `Bearer ${apiKey}`
+			Authorization: `Bearer ${OPENAI_API_KEY}`
 		};
 		const body = JSON.stringify({
 			model: 'gpt-3.5-turbo-1106',
