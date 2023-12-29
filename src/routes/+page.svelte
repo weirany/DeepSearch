@@ -1,6 +1,17 @@
 <script>
-	import { Heading, Button, ButtonGroup, Input, Span, Avatar, Card, Alert } from 'flowbite-svelte';
+	import {
+		Heading,
+		Button,
+		ButtonGroup,
+		Input,
+		Span,
+		Avatar,
+		Card,
+		Alert,
+		Progressbar
+	} from 'flowbite-svelte';
 	import { ArrowUpRightFromSquareOutline } from 'flowbite-svelte-icons';
+	import { sineOut } from 'svelte/easing';
 	import { OPENAI_API_KEY } from './keys.js';
 	import { prompt_body } from './comfyUI.js';
 
@@ -12,91 +23,49 @@
 	// states
 	let isGettingSuggestions = false;
 	let isGeneratingImages = false;
+	let imageGenerationProgress = '0';
 
 	let suggestions = [];
 
-	// simulate api call latency
-	async function stall(stallTime = 5000) {
-		await new Promise((resolve) => setTimeout(resolve, stallTime));
-	}
-
-	function setSuggestionsMock() {
-		suggestions = [
-			// {
-			// 	term: 'Daybed',
-			// 	description: 'A daybed is a sofa that can be made into a bed.'
-			// },
-			// {
-			// 	term: 'Sofa Bed',
-			// 	description: 'A sofa bed is a sofa that can be made into a bed.'
-			// },
-			{
-				term: 'Sofa Table',
-				description: 'A sofa table is a table that is placed behind a sofa.'
-			},
-			{
-				term: 'Sofa Slipcover',
-				description: 'A sofa slipcover is a cover that is placed over a sofa.'
-			},
-			{
-				term: 'Sofa Cover',
-				description: 'A sofa cover is a cover that is placed over a sofa.'
-			},
-			{
-				term: 'Sofa Set',
-				description: 'A sofa set is a set of sofas.'
-			},
-			{
-				term: 'Sofa Chair',
-				description: 'A sofa chair is a chair that is made for one person.'
-			}
-		];
-	}
-
 	async function search() {
+		// generate suggestions
 		isGettingSuggestions = true;
-		// const jsonStr = await callOpenAI(searchTerm);
-		// const suggestionsObj = JSON.parse(jsonStr);
-		// const suggestions = suggestionsObj.suggestions;
-		// console.log(`total suggestions: ${suggestions.length}`);
-		// suggestions.forEach((suggestion) => {
-		// 	console.log(`term: ${suggestion.term}`);
-		// 	console.log(`description: ${suggestion.description}`);
-		// 	generateImage(`${suggestion.term}: ${suggestion.description}`);
-		// });
-		await stall();
-		setSuggestionsMock();
+		const jsonStr = await callOpenAI(searchTerm);
+		const suggestionsObj = JSON.parse(jsonStr);
+		suggestions = suggestionsObj.suggestions;
+		console.log(`total suggestions: ${suggestions.length}`);
 		isGettingSuggestions = false;
 
+		// generate images
 		isGeneratingImages = true;
 		await generateImages();
 
 		while (true) {
 			await hydrateAllImageUrls();
-
 			let allImagesUpdated = suggestions.every((suggestion) => !!suggestion.image);
 			if (allImagesUpdated) {
 				break;
 			}
-			console.log('waiting for all images to be updated...');
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 		}
 		isGeneratingImages = false;
 	}
 
 	async function generateImages() {
-		// trigger image generation
+		// trigger image generation for each suggestion
 		for (let i = 0; i < suggestions.length; i++) {
 			let prompt = `${suggestions[i].term}: ${suggestions[i].description}`;
 			let promptId = await triggerGenerateImage(prompt);
 			suggestions[i].promptId = promptId;
-			console.log(`generated image for prompt: ${prompt} with promptId: ${promptId}`);
+			console.log(`triggered image generation for prompt: ${prompt} with promptId: ${promptId}`);
 		}
 	}
 
 	async function hydrateAllImageUrls() {
+		let imageCount = 0;
 		for (let i = 0; i < suggestions.length; i++) {
 			if (suggestions[i].image) {
+				imageCount++;
 				continue;
 			}
 			let promptId = suggestions[i].promptId;
@@ -113,6 +82,7 @@
 				suggestions[i].image = `http://127.0.0.1:8188/view?filename=${filename}&type=output`;
 			}
 		}
+		imageGenerationProgress = `${(imageCount / suggestions.length) * 100}`;
 	}
 
 	// given a prompt, generate an image, returns the prompt id
@@ -183,7 +153,17 @@
 
 {#if isGeneratingImages}
 	<div class="p-3">
-		<Alert color="primary">Generating images...</Alert>
+		<Progressbar
+			progress={imageGenerationProgress}
+			animate
+			labelOutside="Generating images..."
+			labelInside
+			tweenDuration={1500}
+			easing={sineOut}
+			size="h-6"
+			labelInsideClass="bg-blue-600 text-blue-100 text-base font-medium text-center p-1 leading-none rounded-full"
+			class="mb-8"
+		/>
 	</div>
 {/if}
 
