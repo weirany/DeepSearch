@@ -1,5 +1,7 @@
 <script>
 	import {
+		Breadcrumb,
+		BreadcrumbItem,
 		Heading,
 		Button,
 		ButtonGroup,
@@ -8,7 +10,8 @@
 		Avatar,
 		Card,
 		Alert,
-		Progressbar
+		Progressbar,
+		Spinner
 	} from 'flowbite-svelte';
 	import { ArrowUpRightFromSquareOutline } from 'flowbite-svelte-icons';
 	import { sineOut } from 'svelte/easing';
@@ -31,7 +34,7 @@
 	let imageGenerationProgress = '0';
 	let attempts = 0;
 	let suggestions = [];
-	let drillDownLevel = 0;
+	let terms = [];
 
 	function closeAlert() {
 		isShowingAlert = false;
@@ -45,7 +48,7 @@
 		attempts = 0;
 		suggestions = [];
 		if (resetLevel) {
-			drillDownLevel = 0;
+			terms = [];
 		}
 
 		searchTerm = term;
@@ -83,6 +86,8 @@
 		console.log(`total suggestions: ${suggestions.length}`);
 		isGettingSuggestions = false;
 
+		terms = [...terms, searchTerm];
+
 		// generate images
 		isGeneratingImages = true;
 		await generateImages();
@@ -95,7 +100,6 @@
 			}
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 		}
-		drillDownLevel++;
 		isGeneratingImages = false;
 	}
 
@@ -198,6 +202,17 @@
 	</ButtonGroup>
 </div>
 
+{#if terms.length > 0}
+	<div class="flex justify-center p-3">
+		<Breadcrumb aria-label="Default breadcrumb example">
+			<BreadcrumbItem home>Home</BreadcrumbItem>
+			{#each terms as term (term)}
+				<BreadcrumbItem>{term}</BreadcrumbItem>
+			{/each}
+		</Breadcrumb>
+	</div>
+{/if}
+
 {#if isShowingAlert}
 	<div class="p-3">
 		<Alert dismissable on:close={closeAlert}
@@ -207,8 +222,8 @@
 {/if}
 
 {#if isGettingSuggestions}
-	<div class="p-3">
-		<Alert color="primary">Getting suggestions...</Alert>
+	<div class="mx-auto max-w-[800px] p-3">
+		<Alert color="primary"><Spinner size={4} class="mr-2" />Getting suggestions from LLM...</Alert>
 	</div>
 {/if}
 
@@ -223,8 +238,9 @@
 			size="h-6"
 		/>
 		<Alert color="green" class="mt-3">
-			This will take a minute or two...I am a 4-year-old Mac mini M1. Bear with me. The fact that I
-			can run Stable Diffusion XL (SDXL) is already amazing 😂
+			<Spinner size={4} class="mr-2" />This will take a minute or two...I am a 4-year-old Mac mini
+			M1. Bear with me. The fact that I am able to run Stable Diffusion XL (SDXL) is already amazing
+			😂
 		</Alert>
 	</div>
 {/if}
@@ -245,7 +261,7 @@
 								>Go Deeper</Button
 							>
 						</div>
-						{#if drillDownLevel > 1}
+						{#if terms.length > 1}
 							<div>
 								<a
 									href={`https://www.wayfair.com/keyword.php?keyword=${suggestion.term}&skip_fw=true`}
