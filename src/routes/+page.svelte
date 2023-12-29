@@ -17,22 +17,63 @@
 
 	// node 26 is the image save node in the comfyUI workflow
 	const OUTPUT_NODE = 26;
+	// if LLM is not returning valid suggestions, stop at max 5 attempts
+	const MAX_ATTEMPTS = 5;
 
 	let searchTerm = '';
 
 	// states
 	let isGettingSuggestions = false;
 	let isGeneratingImages = false;
+	let isShowingAlert = false;
 	let imageGenerationProgress = '0';
-
+	let attempts = 0;
 	let suggestions = [];
 
+	function closeAlert() {
+		isShowingAlert = false;
+	}
+
+	async function searchAgain(term) {
+		isGettingSuggestions = false;
+		isGeneratingImages = false;
+		isShowingAlert = false;
+		imageGenerationProgress = '0';
+		attempts = 0;
+		suggestions = [];
+
+		searchTerm = term;
+		await search();
+	}
+
 	async function search() {
+		attempts++;
+
 		// generate suggestions
 		isGettingSuggestions = true;
 		const jsonStr = await callOpenAI(searchTerm);
 		const suggestionsObj = JSON.parse(jsonStr);
 		suggestions = suggestionsObj.suggestions;
+
+		// validate suggestions, if not valid, give it another try
+		if (
+			!suggestions ||
+			suggestions.length === 0 ||
+			!suggestions[0].term ||
+			!suggestions[0].description
+		) {
+			console.log('invalid suggestions, retrying...');
+			if (attempts >= MAX_ATTEMPTS) {
+				console.log(`max attempts reached, giving up`);
+				isGettingSuggestions = false;
+				isShowingAlert = true;
+				attempts = 0;
+				return;
+			}
+			await search();
+			return;
+		}
+
 		console.log(`total suggestions: ${suggestions.length}`);
 		isGettingSuggestions = false;
 
@@ -141,9 +182,17 @@
 			id="searchTerm"
 			placeholder="what you are looking for? for example, sofa"
 		/>
-		<Button on:click={search} color="primary">Search</Button>
+		<Button on:click={searchAgain(searchTerm)} color="primary">Search</Button>
 	</ButtonGroup>
 </div>
+
+{#if isShowingAlert}
+	<div class="p-3">
+		<Alert dismissable on:close={closeAlert}
+			>LLM wasn't able to generate valid suggestions with multiple attempts
+		</Alert>
+	</div>
+{/if}
 
 {#if isGettingSuggestions}
 	<div class="p-3">
@@ -170,23 +219,29 @@
 {#if !isGettingSuggestions && !isGeneratingImages && suggestions.length > 0}
 	<div class="flex flex-wrap p-3">
 		{#each suggestions as suggestion (suggestion.term)}
-			<Card class="m-3 w-96">
-				<div class="flex items-center space-x-4 p-1">
-					<Avatar size="xl" src={suggestion.image} />
-					<div class="space-y-1 font-medium">
-						<div>{suggestion.term}</div>
-						<div class="text-sm text-gray-400">
-							{suggestion.description}
-						</div>
-						<div>
-							<a href="/" class="inline-flex items-center text-primary-600 hover:underline">
-								See Products
-								<ArrowUpRightFromSquareOutline class="ms-2.5 h-3 w-3" />
-							</a>
+			<button type="button" on:click={() => searchAgain(suggestion.term)}>
+				<Card class="m-3 w-96">
+					<div class="flex items-center space-x-4 p-1">
+						<Avatar size="xl" src={suggestion.image} />
+						<div class="space-y-1 font-medium">
+							<div>{suggestion.term}</div>
+							<div class="text-sm text-gray-400">
+								{suggestion.description}
+							</div>
+							<div>
+								<a
+									href={`https://www.wayfair.com/keyword.php?keyword=${suggestion.term}&skip_fw=true`}
+									class="inline-flex items-center text-primary-600 hover:underline"
+									target="_blank"
+								>
+									See Products
+									<ArrowUpRightFromSquareOutline class="ms-2.5 h-3 w-3" />
+								</a>
+							</div>
 						</div>
 					</div>
-				</div>
-			</Card>
+				</Card>
+			</button>
 		{/each}
 	</div>
 {/if}
