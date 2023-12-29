@@ -19,6 +19,8 @@
 	const OUTPUT_NODE = 26;
 	// if LLM is not returning valid suggestions, stop at max 5 attempts
 	const MAX_ATTEMPTS = 5;
+	// ComfyUI server
+	const COMFYUI_SERVER = 'http://yip.sytes.net:8188';
 
 	let searchTerm = '';
 
@@ -29,18 +31,22 @@
 	let imageGenerationProgress = '0';
 	let attempts = 0;
 	let suggestions = [];
+	let drillDownLevel = 0;
 
 	function closeAlert() {
 		isShowingAlert = false;
 	}
 
-	async function searchAgain(term) {
+	async function searchAgain(term, resetLevel = false) {
 		isGettingSuggestions = false;
 		isGeneratingImages = false;
 		isShowingAlert = false;
 		imageGenerationProgress = '0';
 		attempts = 0;
 		suggestions = [];
+		if (resetLevel) {
+			drillDownLevel = 0;
+		}
 
 		searchTerm = term;
 		await search();
@@ -89,6 +95,7 @@
 			}
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 		}
+		drillDownLevel++;
 		isGeneratingImages = false;
 	}
 
@@ -110,7 +117,7 @@
 				continue;
 			}
 			let promptId = suggestions[i].promptId;
-			const url = `http://127.0.0.1:8188/history/${promptId}`;
+			const url = `${COMFYUI_SERVER}/history/${promptId}`;
 			const headers = {
 				'Content-Type': 'application/json'
 			};
@@ -120,15 +127,15 @@
 			if (data && data[promptId]) {
 				let filename = data[promptId].outputs[OUTPUT_NODE].images[0].filename;
 				console.log(`filename: ${filename}`);
-				suggestions[i].image = `http://127.0.0.1:8188/view?filename=${filename}&type=output`;
+				suggestions[i].image = `${COMFYUI_SERVER}/view?filename=${filename}&type=output`;
 			}
 		}
-		imageGenerationProgress = `${(imageCount / suggestions.length) * 100}`;
+		imageGenerationProgress = `${Math.floor((imageCount / suggestions.length) * 100)}`;
 	}
 
 	// given a prompt, generate an image, returns the prompt id
 	async function triggerGenerateImage(prompt) {
-		const url = 'http://127.0.0.1:8188/prompt';
+		const url = `${COMFYUI_SERVER}/prompt`;
 		const headers = {
 			'Content-Type': 'application/json'
 		};
@@ -154,7 +161,7 @@
 				{
 					role: 'system',
 					content:
-						'You are an assistant supporting users on an e-commerce website to refine their search queries.'
+						'You are an assistant supporting users on an e-commerce home goods and furniture website to refine their search queries.'
 				},
 				{
 					role: 'user',
@@ -172,17 +179,22 @@
 
 <div class="p-3 text-center">
 	<Heading tag="h1" class="p-2">Wayfair <Span gradient>Deep</Span>Search</Heading>
-	<Heading tag="h5">Unleash the Power of User Intent Deep Dive</Heading>
+	<Heading tag="h4">Help users reformulate and get to their search intent</Heading>
 </div>
 
-<div>
+<div class="mx-auto max-w-[600px]">
 	<ButtonGroup class="w-full p-3">
 		<Input
 			bind:value={searchTerm}
 			id="searchTerm"
-			placeholder="what you are looking for? for example, sofa"
+			placeholder="start with something very broad. such as 'rack', 'rug'"
+			on:keyup={(event) => {
+				if (event.key === 'Enter') {
+					searchAgain(searchTerm, true);
+				}
+			}}
 		/>
-		<Button on:click={searchAgain(searchTerm)} color="primary">Search</Button>
+		<Button on:click={() => searchAgain(searchTerm, true)} color="primary">Search</Button>
 	</ButtonGroup>
 </div>
 
@@ -201,33 +213,39 @@
 {/if}
 
 {#if isGeneratingImages}
-	<div class="p-3">
+	<div class="mx-auto max-w-[800px] p-3">
 		<Progressbar
 			progress={imageGenerationProgress}
 			animate
 			labelOutside="Generating images..."
-			labelInside
 			tweenDuration={1500}
 			easing={sineOut}
 			size="h-6"
-			labelInsideClass="bg-blue-600 text-blue-100 text-base font-medium text-center p-1 leading-none rounded-full"
-			class="mb-8"
 		/>
+		<Alert color="green" class="mt-3">
+			This will take a minute or two...I am a 4-year-old Mac mini M1. Bear with me. The fact that I
+			can run Stable Diffusion XL (SDXL) is already amazing 😂
+		</Alert>
 	</div>
 {/if}
 
 {#if !isGettingSuggestions && !isGeneratingImages && suggestions.length > 0}
 	<div class="flex flex-wrap p-3">
 		{#each suggestions as suggestion (suggestion.term)}
-			<button type="button" on:click={() => searchAgain(suggestion.term)}>
-				<Card class="m-3 w-96">
-					<div class="flex items-center space-x-4 p-1">
-						<Avatar size="xl" src={suggestion.image} />
-						<div class="space-y-1 font-medium">
-							<div>{suggestion.term}</div>
-							<div class="text-sm text-gray-400">
-								{suggestion.description}
-							</div>
+			<Card class="m-3 w-96">
+				<div class="flex items-center space-x-4 p-1">
+					<Avatar size="xl" src={suggestion.image} />
+					<div class="space-y-1 font-medium">
+						<div>{suggestion.term}</div>
+						<div class="mb-2 text-sm text-gray-400">
+							{suggestion.description}
+						</div>
+						<div class="mb-1">
+							<Button outline size="xs" on:click={() => searchAgain(suggestion.term)}
+								>Go Deeper</Button
+							>
+						</div>
+						{#if drillDownLevel > 1}
 							<div>
 								<a
 									href={`https://www.wayfair.com/keyword.php?keyword=${suggestion.term}&skip_fw=true`}
@@ -238,10 +256,10 @@
 									<ArrowUpRightFromSquareOutline class="ms-2.5 h-3 w-3" />
 								</a>
 							</div>
-						</div>
+						{/if}
 					</div>
-				</Card>
-			</button>
+				</div>
+			</Card>
 		{/each}
 	</div>
 {/if}

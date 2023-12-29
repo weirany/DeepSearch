@@ -26,9 +26,13 @@ You can preview the production build with `npm run preview`.
 
 ## Image generation
 
-This Svelte app will need to call the ComfyUI backend to generate images. In my case, it is hosted locally. Do not forget to enable CORS for ComfyUI. 
+This Svelte app will need to call the ComfyUI backend to generate images. 
 
-Running the ComfyUI with MacOS M1: 
+In my case, it is hosted locally. Do not forget to enable CORS for ComfyUI. 
+
+Also listening to all IPs for incoming requests. 
+
+Running the ComfyUI on Mac M1: 
 ```
-python main.py --enable-cors-header --force-fp16
+python main.py --enable-cors-header --force-fp16 --listen 0.0.0.0
 ```
