@@ -11,7 +11,8 @@
 		Card,
 		Alert,
 		Progressbar,
-		Spinner
+		Spinner,
+		Toggle
 	} from 'flowbite-svelte';
 	import { ArrowUpRightFromSquareOutline } from 'flowbite-svelte-icons';
 	import { sineOut } from 'svelte/easing';
@@ -26,6 +27,7 @@
 	const COMFYUI_SERVER = 'http://yip.sytes.net:8188';
 
 	let searchTerm = '';
+	let isImageGenerationOn = true;
 
 	// states
 	let isGettingSuggestions = false;
@@ -89,18 +91,22 @@
 		terms = [...terms, searchTerm];
 
 		// generate images
-		isGeneratingImages = true;
-		await generateImages();
+		if (isImageGenerationOn) {
+			isGeneratingImages = true;
+			await generateImages();
 
-		while (true) {
-			await hydrateAllImageUrls();
-			let allImagesUpdated = suggestions.every((suggestion) => !!suggestion.image);
-			if (allImagesUpdated) {
-				break;
+			// poll for image generation status
+			// stop when all images are generated, or when image generation is turned off
+			while (isImageGenerationOn) {
+				await hydrateAllImageUrls();
+				let allImagesUpdated = suggestions.every((suggestion) => !!suggestion.image);
+				if (allImagesUpdated) {
+					break;
+				}
+				await new Promise((resolve) => setTimeout(resolve, 1000));
 			}
-			await new Promise((resolve) => setTimeout(resolve, 1000));
+			isGeneratingImages = false;
 		}
-		isGeneratingImages = false;
 	}
 
 	async function generateImages() {
@@ -224,6 +230,10 @@
 	</ButtonGroup>
 </div>
 
+<div class="flex justify-center p-3">
+	<Toggle bind:checked={isImageGenerationOn}>Generate images</Toggle>
+</div>
+
 {#if terms.length > 0}
 	<div class="flex justify-center p-3">
 		<Breadcrumb aria-label="Default breadcrumb example">
@@ -263,6 +273,9 @@
 			<Spinner size={4} class="mr-2" />This will take a minute or two...I am a 4-year-old Mac mini
 			M1. Bear with me. The fact that I am able to run Stable Diffusion XL (SDXL) is already amazing
 			😂
+			<Button outline size="xs" class="ml-5" on:click={() => (isImageGenerationOn = false)}
+				>Disable Image Generation</Button
+			>
 		</Alert>
 	</div>
 {/if}
@@ -272,7 +285,9 @@
 		{#each suggestions as suggestion (suggestion.term)}
 			<Card class="m-3 w-96">
 				<div class="flex items-center space-x-4 p-1">
-					<Avatar size="xl" src={suggestion.image} />
+					{#if suggestion.image}
+						<Avatar size="xl" src={suggestion.image} />
+					{/if}
 					<div class="space-y-1 font-medium">
 						<div>{suggestion.term}</div>
 						<div class="mb-2 text-sm text-gray-400">
