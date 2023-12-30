@@ -18,6 +18,7 @@
 	import { sineOut } from 'svelte/easing';
 	import { OPENAI_API_KEY, GEMINI_API_KEY } from './keys.js';
 	import { prompt_body } from './comfyUI.js';
+	import { markdownToTxt } from 'markdown-to-txt';
 
 	// node 26 is the image save node in the comfyUI workflow
 	const OUTPUT_NODE = 26;
@@ -63,8 +64,12 @@
 		// generate suggestions
 		isGettingSuggestions = true;
 		const jsonStr = await callGemini(searchTerm);
-		const suggestionsObj = JSON.parse(jsonStr);
-		suggestions = suggestionsObj.suggestions;
+
+		// Gemini may return invalid JSON string
+		if (jsonStr !== '') {
+			const suggestionsObj = JSON.parse(jsonStr);
+			suggestions = suggestionsObj.suggestions;
+		}
 
 		// validate suggestions, if not valid, give it another try
 		if (
@@ -120,27 +125,32 @@
 	}
 
 	async function hydrateAllImageUrls() {
-		let imageCount = 0;
-		for (let i = 0; i < suggestions.length; i++) {
-			if (suggestions[i].image) {
-				imageCount++;
-				continue;
-			}
-			let promptId = suggestions[i].promptId;
-			const url = `${COMFYUI_SERVER}/history/${promptId}`;
-			const headers = {
-				'Content-Type': 'application/json'
-			};
-			const response = await fetch(url, { method: 'GET', headers });
-			const data = await response.json();
+		try {
+			let imageCount = 0;
+			for (let i = 0; i < suggestions.length; i++) {
+				if (suggestions[i].image) {
+					imageCount++;
+					continue;
+				}
+				let promptId = suggestions[i].promptId;
+				const url = `${COMFYUI_SERVER}/history/${promptId}`;
+				const headers = {
+					'Content-Type': 'application/json'
+				};
+				const response = await fetch(url, { method: 'GET', headers });
+				const data = await response.json();
 
-			if (data && data[promptId]) {
-				let filename = data[promptId].outputs[OUTPUT_NODE].images[0].filename;
-				console.log(`filename: ${filename}`);
-				suggestions[i].image = `${COMFYUI_SERVER}/view?filename=${filename}&type=output`;
+				if (data && data[promptId]) {
+					let filename = data[promptId].outputs[OUTPUT_NODE].images[0].filename;
+					console.log(`filename: ${filename}`);
+					suggestions[i].image = `${COMFYUI_SERVER}/view?filename=${filename}&type=output`;
+				}
 			}
+			imageGenerationProgress = `${Math.floor((imageCount / suggestions.length) * 100)}`;
+		} catch (e) {
+			// any error, just ignore
+			console.error(e);
 		}
-		imageGenerationProgress = `${Math.floor((imageCount / suggestions.length) * 100)}`;
 	}
 
 	// given a prompt, generate an image, returns the prompt id
@@ -177,7 +187,21 @@
 		const response = await fetch(url, { method: 'POST', headers, body });
 		const data = await response.json();
 		const content = data.candidates[0].content.parts[0].text;
-		return content;
+		try {
+			JSON.parse(content);
+			return content;
+		} catch (e) {
+			console.error('Failed to parse content as JSON, but will try strip Markdown:', e);
+			// could be in markdown format. strip that out and try again
+			const paintContent = markdownToTxt(content);
+			try {
+				JSON.parse(paintContent);
+				return paintContent;
+			} catch (e) {
+				console.error('Failed to parse content as JSON:', e);
+				return '';
+			}
+		}
 	}
 
 	async function callOpenAI(term) {

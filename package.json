@@ -21,6 +21,7 @@
 		"flowbite": "^2.2.1",
 		"flowbite-svelte": "^0.44.21",
 		"flowbite-svelte-icons": "^0.4.5",
+		"markdown-to-txt": "^2.0.1",
 		"postcss": "^8.4.32",
 		"postcss-load-config": "^5.0.2",
 		"prettier": "^3.1.1",
@@ -28,7 +29,8 @@
 		"prettier-plugin-tailwindcss": "^0.5.9",
 		"svelte": "^4.2.7",
 		"tailwindcss": "^3.3.6",
-		"vite": "^5.0.3"
+		"vite": "^5.0.3",
+		"lodash": "^4.17.21"
 	},
 	"type": "module"
 }
