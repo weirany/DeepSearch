@@ -16,7 +16,7 @@
 	} from 'flowbite-svelte';
 	import { ArrowUpRightFromSquareOutline } from 'flowbite-svelte-icons';
 	import { sineOut } from 'svelte/easing';
-	import { OPENAI_API_KEY, GEMINI_API_KEY } from './keys.js';
+	import { GEMINI_API_KEY } from './keys.js';
 	import { prompt_body } from './comfyUI.js';
 	import { markdownToTxt } from 'markdown-to-txt';
 
@@ -204,33 +204,33 @@
 		}
 	}
 
-	async function callOpenAI(term) {
-		const url = 'https://api.openai.com/v1/chat/completions';
-		const headers = {
-			'Content-Type': 'application/json',
-			Authorization: `Bearer ${OPENAI_API_KEY}`
-		};
-		const body = JSON.stringify({
-			model: 'gpt-3.5-turbo-1106',
-			response_format: { type: 'json_object' },
-			messages: [
-				{
-					role: 'system',
-					content:
-						'You are an assistant supporting users on an e-commerce home goods and furniture website to refine their search queries.'
-				},
-				{
-					role: 'user',
-					content: `A user has searched for "${term}". Please provide a list of popular types of "${term}" in a JSON structure to assist the user in narrowing down their search. Your answer for "Rug" should be formatted like this: {"suggestions":[{"term":"Area Rugs","description":"For larger spaces, often decorative."},{"term":"Runner Rugs","description":"Long, narrow rugs, great for hallways."}]}`
-				}
-			]
-		});
+	// async function callOpenAI(term) {
+	// 	const url = 'https://api.openai.com/v1/chat/completions';
+	// 	const headers = {
+	// 		'Content-Type': 'application/json',
+	// 		Authorization: `Bearer ${OPENAI_API_KEY}`
+	// 	};
+	// 	const body = JSON.stringify({
+	// 		model: 'gpt-3.5-turbo-1106',
+	// 		response_format: { type: 'json_object' },
+	// 		messages: [
+	// 			{
+	// 				role: 'system',
+	// 				content:
+	// 					'You are an assistant supporting users on an e-commerce home goods and furniture website to refine their search queries.'
+	// 			},
+	// 			{
+	// 				role: 'user',
+	// 				content: `A user has searched for "${term}". Please provide a list of popular types of "${term}" in a JSON structure to assist the user in narrowing down their search. Your answer for "Rug" should be formatted like this: {"suggestions":[{"term":"Area Rugs","description":"For larger spaces, often decorative."},{"term":"Runner Rugs","description":"Long, narrow rugs, great for hallways."}]}`
+	// 			}
+	// 		]
+	// 	});
 
-		const response = await fetch(url, { method: 'POST', headers, body });
-		const data = await response.json();
-		const content = data.choices[0].message.content;
-		return content;
-	}
+	// 	const response = await fetch(url, { method: 'POST', headers, body });
+	// 	const data = await response.json();
+	// 	const content = data.choices[0].message.content;
+	// 	return content;
+	// }
 </script>
 
 <div class="p-3 text-center">
