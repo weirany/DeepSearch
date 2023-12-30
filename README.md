@@ -36,3 +36,6 @@ Running the ComfyUI on Mac M1:
 ```
 python main.py --enable-cors-header --force-fp16 --listen 0.0.0.0
 ```
+
+## Useful ComfyUI Doc
+https://www.yunrobot.cn/showdoc/web/#/641840309/231516846
